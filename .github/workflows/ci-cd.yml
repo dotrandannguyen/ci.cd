@@ -1,44 +1,35 @@
-name: CI/CD Deploy to EC2
+name: CI Build & Test on GitHub
 
 on:
   push:
-    branches: ["master"] # ✅ Sử dụng branch master
+    branches: ["master"]       # Chạy khi push lên master
   pull_request:
-    branches: ["master"]
-  workflow_dispatch: # ✅ Thêm nút "Run workflow" để chạy thủ công
+    branches: ["master"]       # Chạy khi có pull request vào master
+  workflow_dispatch:           # Cho phép chạy thủ công từ GitHub Actions
 
 jobs:
-  test-and-deploy:
-    runs-on: ubuntu-latest
+  build-and-test:
+    runs-on: ubuntu-latest     # Sử dụng máy ảo Ubuntu mới nhất
 
     steps:
       # Bước 1: Checkout source code từ GitHub
-      - name: Checkout source code
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # Bước 2: Cài dependencies và chạy test
-      - name: Install dependencies & run tests
-        run: |
-          npm ci
-          npm test
-
-      # Bước 3: Thiết lập SSH để kết nối EC2
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
+      # Bước 2: Thiết lập Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          node-version: "22"   # Node.js version bạn đang dùng
 
-      # Bước 4: Copy source code lên EC2
-      - name: Copy source code to EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} "rm -rf ~/S-Group-BE/Poll && mkdir -p ~/S-Group-BE/Poll"
-          scp -r * ubuntu@${{ secrets.EC2_HOST }}:~/S-Group-BE/Poll
+      # Bước 3: Cài dependencies
+      - name: Install dependencies
+        run: npm ci
 
-      # Bước 5: Deploy và restart Docker Compose trên EC2
-      - name: Deploy and restart Docker
-        run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-            cd ~/S-Group-BE/Poll
-            sudo docker compose down || true
-            sudo docker compose up -d --build
-          EOF
+      # Bước 4: Chạy test với Jest
+      - name: Run tests
+        run: npm test
+
+      # Bước 5: In thông báo thành công
+      - name: Success message
+        run: echo "🎉 CI build & test chạy thành công trên GitHub Actions!"
