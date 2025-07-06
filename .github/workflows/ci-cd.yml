@@ -1,34 +1,40 @@
-name: CI/CD aggin
+name: CI/CD Deploy to EC2
 
 on:
   push:
-    branches: ["main"]
+    branches: ["master"] # ✅ Sử dụng branch master
   pull_request:
-    branches: ["main"]
+    branches: ["master"]
+  workflow_dispatch: # ✅ Thêm nút "Run workflow" để chạy thủ công
 
 jobs:
   test-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # Bước 1: Checkout source code từ GitHub
       - name: Checkout source code
         uses: actions/checkout@v3
 
-      - name: Install dependencies & run test
+      # Bước 2: Cài dependencies và chạy test
+      - name: Install dependencies & run tests
         run: |
           npm ci
           npm test
 
+      # Bước 3: Thiết lập SSH để kết nối EC2
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      # Bước 4: Copy source code lên EC2
       - name: Copy source code to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} "rm -rf ~/S-Group-BE/Poll && mkdir -p ~/S-Group-BE/Poll"
           scp -r * ubuntu@${{ secrets.EC2_HOST }}:~/S-Group-BE/Poll
 
+      # Bước 5: Deploy và restart Docker Compose trên EC2
       - name: Deploy and restart Docker
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
