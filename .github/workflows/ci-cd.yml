@@ -5,6 +5,7 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+
 jobs:
   test-and-deploy:
     runs-on: ubuntu-latest
@@ -12,6 +13,11 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3
+
+      - name: Install dependencies & run test
+        run: |
+          npm ci
+          npm test
 
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -21,18 +27,12 @@ jobs:
       - name: Copy source code to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} "rm -rf ~/S-Group-BE/Poll && mkdir -p ~/S-Group-BE/Poll"
-          scp -r Poll/* ubuntu@${{ secrets.EC2_HOST }}:~/S-Group-BE/Poll
+          scp -r * ubuntu@${{ secrets.EC2_HOST }}:~/S-Group-BE/Poll
 
       - name: Deploy and restart Docker
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             cd ~/S-Group-BE/Poll
-            sudo docker compose down
+            sudo docker compose down || true
             sudo docker compose up -d --build
           EOF
-          
-      - name: Run test
-        run: |
-          cd Poll
-          npm install
-          npm test
