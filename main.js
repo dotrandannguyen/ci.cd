@@ -13,7 +13,7 @@ try
     app.use(express.json())
     app.use("/", routes)
     app.use((req, res) => {
-        res.status(404).json({message: "Không tìm thấy route hợp lệ"})
+        res.status(404).json({message: "00000000000000"})
     })
     //////
     app.use((err, req, res, next) => {
