@@ -13,11 +13,11 @@ try
     app.use(express.json())
     app.use("/", routes)
     app.use((req, res) => {
-        res.status(404).json({message: "00000000000000"})
+        res.status(404).json({message: "Không tìm thấy route hợp lệ"})
     })
     //////
     app.use((err, req, res, next) => {
-        console.error(err.stack)
+        console.error(err.stack)    
         res.status(500).json({
             error: err.message,
             message: "Đây là middleware error cuối cùng"
